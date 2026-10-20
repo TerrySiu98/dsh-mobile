@@ -37,7 +37,7 @@ jobs:
           test -f "$app/Info.plist"
           test -x "$app/Runner"
           file "$app/Runner" | tee binary-info.txt
-          lipo -verify_arch arm64 "$app/Runner"
+          lipo "$app/Runner" -verify_arch arm64
           mkdir -p ipa-staging/Payload dist
           cp -R "$app" ipa-staging/Payload/
           (cd ipa-staging && zip -qry ../dist/DSH-Remote-unsigned.ipa Payload)
