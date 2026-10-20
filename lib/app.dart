@@ -13,7 +13,7 @@ class DshRemoteApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'DSH Remote',
+      title: 'DSH',
       debugShowCheckedModeBanner: false,
       theme: buildDshTheme(),
       home: const AppUpdateCoordinator(child: AuthGate()),

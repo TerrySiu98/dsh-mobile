@@ -7,7 +7,7 @@ void main() {
 
     expect(config.useMock, isFalse);
     expect(config.relayBaseUrl, AppConfig.productionRelayUrl);
-    expect(config.relayBaseUrl, 'https://relay.dshmobile.online');
+    expect(config.relayBaseUrl, 'https://dsh-relay.uw.cx');
     expect(config.relayOrigin.scheme, 'https');
   });
 
