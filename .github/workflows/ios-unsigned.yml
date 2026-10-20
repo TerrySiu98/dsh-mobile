@@ -28,7 +28,7 @@ jobs:
           flutter analyze
           flutter test
       - name: Build physical-device release without signing
-        run: flutter build ios --release --no-codesign
+        run: flutter build ios --release --no-codesign --build-number=1006
       - name: Package and verify IPA
         shell: bash
         run: |
