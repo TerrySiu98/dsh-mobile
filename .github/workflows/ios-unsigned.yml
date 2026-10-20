@@ -1,0 +1,60 @@
+name: Build unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-unsigned-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.38.10
+          channel: stable
+          cache: true
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Analyze and test
+        run: |
+          flutter analyze
+          flutter test
+      - name: Build physical-device release without signing
+        run: flutter build ios --release --no-codesign
+      - name: Package and verify IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          app=build/ios/iphoneos/Runner.app
+          test -f "$app/Info.plist"
+          test -x "$app/Runner"
+          file "$app/Runner" | tee binary-info.txt
+          lipo -verify_arch arm64 "$app/Runner"
+          mkdir -p ipa-staging/Payload dist
+          cp -R "$app" ipa-staging/Payload/
+          (cd ipa-staging && zip -qry ../dist/DSH-Remote-unsigned.ipa Payload)
+          unzip -t dist/DSH-Remote-unsigned.ipa
+          python3 - <<'PY'
+          import plistlib, zipfile
+          with zipfile.ZipFile('dist/DSH-Remote-unsigned.ipa') as archive:
+              info = plistlib.loads(archive.read('Payload/Runner.app/Info.plist'))
+              assert info['CFBundlePackageType'] == 'APPL'
+              assert 'Payload/Runner.app/' + info['CFBundleExecutable'] in archive.namelist()
+              print('Verified app:', info['CFBundleIdentifier'], info['CFBundleShortVersionString'])
+          PY
+          printf '%s\n' 'Unsigned physical-device build. Sign with your own certificate and provisioning profile before installation.' 'No Apple signing credentials are used by this workflow.' "Source: $GITHUB_SHA" > dist/README.txt
+          (cd dist && shasum -a 256 DSH-Remote-unsigned.ipa > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DSH-Remote-iOS-unsigned
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
